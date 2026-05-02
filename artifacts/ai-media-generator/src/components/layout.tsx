@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Layers, Grid, Sparkles, LogOut, ChevronDown } from "lucide-react";
 import { useUser, useClerk, Show } from "@clerk/react";
 import { useState } from "react";
+import { UsageMeter } from "@/components/UsageMeter";
 
 function UserMenu() {
   const { user } = useUser();
@@ -107,6 +108,10 @@ export function Layout({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="p-4 mt-auto space-y-3">
+          <Show when="signed-in">
+            <UsageMeter />
+          </Show>
+
           <div className="bg-white/5 px-4 py-3 rounded-xl border border-border/50">
             <p className="text-xs text-muted-foreground mb-1">Powered by</p>
             <p className="text-sm font-medium text-foreground flex items-center gap-2">

@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const generatedImagesTable = pgTable("generated_images", {
   id: serial("id").primaryKey(),
+  clerkUserId: text("clerk_user_id"),
   prompt: text("prompt").notNull(),
   size: text("size").notNull().default("1024x1024"),
   b64Json: text("b64_json").notNull(),

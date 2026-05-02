@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: openai
     description: OpenAI AI media generation
+  - name: user
+    description: User profile and billing
 paths:
   /healthz:
     get:
@@ -92,6 +94,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ImageStats"
+
+  /user/me:
+    get:
+      operationId: getMe
+      tags: [user]
+      summary: Get current user profile and usage
+      responses:
+        "200":
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
 
 components:
   schemas:
@@ -182,3 +199,26 @@ components:
           type: boolean
       required:
         - success
+
+    UserProfile:
+      type: object
+      properties:
+        clerkUserId:
+          type: string
+        isPro:
+          type: boolean
+        todayCount:
+          type: integer
+          description: Number of images generated today
+        dailyLimit:
+          type: integer
+          description: Daily limit (null means unlimited)
+        remainingToday:
+          type: integer
+          description: Remaining generations today (-1 means unlimited)
+      required:
+        - clerkUserId
+        - isPro
+        - todayCount
+        - dailyLimit
+        - remainingToday

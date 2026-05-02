@@ -72,3 +72,16 @@ export const GetImageStatsResponse = zod.object({
   today: zod.number(),
   bySize: zod.record(zod.string(), zod.number()),
 });
+
+/**
+ * @summary Get current user profile and usage
+ */
+export const GetMeResponse = zod.object({
+  clerkUserId: zod.string(),
+  isPro: zod.boolean(),
+  todayCount: zod.number().describe("Number of images generated today"),
+  dailyLimit: zod.number().describe("Daily limit (null means unlimited)"),
+  remainingToday: zod
+    .number()
+    .describe("Remaining generations today (-1 means unlimited)"),
+});

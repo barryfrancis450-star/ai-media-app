@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Wand2, Download, Image as ImageIcon } from "lucide-react";
+import { Loader2, Wand2, Download, Image as ImageIcon, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -10,7 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useGenerateImage, getListGeneratedImagesQueryKey, getGetImageStatsQueryKey, GeneratedImage } from "@workspace/api-client-react";
+import {
+  useGenerateImage,
+  useGetMe,
+  getListGeneratedImagesQueryKey,
+  getGetImageStatsQueryKey,
+  getGetMeQueryKey,
+  GeneratedImage,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
@@ -35,6 +42,9 @@ export default function PromptBox() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [generatedImage, setGeneratedImage] = useState<GeneratedImage | null>(null);
+  const { data: me } = useGetMe();
+
+  const limitReached = !me?.isPro && (me?.remainingToday ?? 1) === 0;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,15 +57,30 @@ export default function PromptBox() {
         setGeneratedImage(data);
         queryClient.invalidateQueries({ queryKey: getListGeneratedImagesQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetImageStatsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
         toast({ title: "Image generated", description: "Saved to your gallery." });
       },
-      onError: (error) => {
-        toast({ variant: "destructive", title: "Generation failed", description: error.message });
+      onError: (error: unknown) => {
+        const msg =
+          (error as { message?: string })?.message ??
+          "Something went wrong. Please try again.";
+        const isLimit = msg.toLowerCase().includes("limit") || (error as { status?: number })?.status === 429;
+        if (isLimit) {
+          queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+          toast({
+            variant: "destructive",
+            title: "Daily limit reached",
+            description: "Free users can generate 5 images per day. Resets at midnight.",
+          });
+        } else {
+          toast({ variant: "destructive", title: "Generation failed", description: msg });
+        }
       },
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    if (limitReached) return;
     generateMutation.mutate({ data: values });
   }
 
@@ -78,6 +103,7 @@ export default function PromptBox() {
                     <Textarea
                       placeholder="A lone astronaut standing on a neon-lit cyber city street, rain falling..."
                       className="resize-none h-32 bg-black/40 border-white/10 focus-visible:ring-white/20 text-base text-white placeholder:text-white/30"
+                      disabled={limitReached}
                       {...field}
                     />
                   </FormControl>
@@ -93,7 +119,7 @@ export default function PromptBox() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-white/70">Dimensions</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={limitReached}>
                       <FormControl>
                         <SelectTrigger className="bg-black/40 border-white/10 text-white">
                           <SelectValue placeholder="Select size" />
@@ -120,6 +146,7 @@ export default function PromptBox() {
                       <Input
                         placeholder="Optional style..."
                         className="bg-black/40 border-white/10 text-white placeholder:text-white/30"
+                        disabled={limitReached}
                         {...field}
                         value={field.value || ""}
                       />
@@ -137,8 +164,10 @@ export default function PromptBox() {
                   <Badge
                     key={style}
                     variant="secondary"
-                    className="cursor-pointer hover:bg-white/20 hover:text-white transition-colors bg-white/5 border border-white/10 text-white/60"
-                    onClick={() => form.setValue("style", style)}
+                    className={`cursor-pointer transition-colors bg-white/5 border border-white/10 text-white/60 ${
+                      limitReached ? "opacity-40 pointer-events-none" : "hover:bg-white/20 hover:text-white"
+                    }`}
+                    onClick={() => !limitReached && form.setValue("style", style)}
                   >
                     {style}
                   </Badge>
@@ -146,24 +175,31 @@ export default function PromptBox() {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full h-12 text-base bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-900/40 transition-all active:scale-[0.98]"
-              disabled={generateMutation.isPending}
-              data-testid="generate-button"
-            >
-              {generateMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Synthesizing...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="mr-2 h-5 w-5" />
-                  Generate Image
-                </>
-              )}
-            </Button>
+            {limitReached ? (
+              <div className="w-full h-12 flex items-center justify-center gap-2 rounded-md bg-red-950/50 border border-red-800/50 text-red-400 text-sm font-medium">
+                <Lock className="h-4 w-4" />
+                Daily limit reached — resets tomorrow
+              </div>
+            ) : (
+              <Button
+                type="submit"
+                className="w-full h-12 text-base bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-900/40 transition-all active:scale-[0.98]"
+                disabled={generateMutation.isPending}
+                data-testid="generate-button"
+              >
+                {generateMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Synthesizing...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="mr-2 h-5 w-5" />
+                    Generate Image
+                  </>
+                )}
+              </Button>
+            )}
           </form>
         </Form>
       </div>
