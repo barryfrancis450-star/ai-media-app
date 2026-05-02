@@ -14,3 +14,61 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary Generate an AI image from a text prompt
+ */
+export const generateImageBodySizeDefault = `1024x1024`;
+
+export const GenerateImageBody = zod.object({
+  prompt: zod.string().describe("Text prompt for image generation"),
+  size: zod
+    .enum(["1024x1024", "1536x1024", "1024x1536"])
+    .default(generateImageBodySizeDefault)
+    .describe("Image size"),
+  style: zod
+    .string()
+    .optional()
+    .describe("Optional style hint appended to the prompt"),
+});
+
+export const GenerateImageResponse = zod.object({
+  id: zod.number(),
+  prompt: zod.string(),
+  b64_json: zod.string(),
+  size: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary List all previously generated images
+ */
+export const ListGeneratedImagesResponseItem = zod.object({
+  id: zod.number(),
+  prompt: zod.string(),
+  size: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListGeneratedImagesResponse = zod.array(
+  ListGeneratedImagesResponseItem,
+);
+
+/**
+ * @summary Delete a generated image
+ */
+export const DeleteGeneratedImageParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteGeneratedImageResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Get generation statistics
+ */
+export const GetImageStatsResponse = zod.object({
+  total: zod.number(),
+  today: zod.number(),
+  bySize: zod.record(zod.string(), zod.number()),
+});

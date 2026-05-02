@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: openai
+    description: OpenAI AI media generation
 paths:
   /healthz:
     get:
@@ -24,6 +26,73 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /openai/images/generate:
+    post:
+      operationId: generateImage
+      tags: [openai]
+      summary: Generate an AI image from a text prompt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateImageBody"
+      responses:
+        "200":
+          description: Generated image as base64
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedImage"
+
+  /openai/images:
+    get:
+      operationId: listGeneratedImages
+      tags: [openai]
+      summary: List all previously generated images
+      responses:
+        "200":
+          description: List of generated images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GeneratedImageRecord"
+
+  /openai/images/{id}:
+    delete:
+      operationId: deleteGeneratedImage
+      tags: [openai]
+      summary: Delete a generated image
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+
+  /openai/images/stats:
+    get:
+      operationId: getImageStats
+      tags: [openai]
+      summary: Get generation statistics
+      responses:
+        "200":
+          description: Stats about image generation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +103,82 @@ components:
       required:
         - status
 
+    GenerateImageBody:
+      type: object
+      properties:
+        prompt:
+          type: string
+          description: Text prompt for image generation
+        size:
+          type: string
+          enum: ["1024x1024", "1536x1024", "1024x1536"]
+          default: "1024x1024"
+          description: Image size
+        style:
+          type: string
+          description: Optional style hint appended to the prompt
+      required:
+        - prompt
+
+    GeneratedImage:
+      type: object
+      properties:
+        id:
+          type: integer
+        prompt:
+          type: string
+        b64_json:
+          type: string
+        size:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - prompt
+        - b64_json
+        - size
+        - createdAt
+
+    GeneratedImageRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        prompt:
+          type: string
+        size:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - prompt
+        - size
+        - createdAt
+
+    ImageStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        today:
+          type: integer
+        bySize:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+        - total
+        - today
+        - bySize
+
+    DeleteResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
