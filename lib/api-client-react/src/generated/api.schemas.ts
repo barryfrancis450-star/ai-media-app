@@ -56,14 +56,3 @@ export interface ImageStats {
 export interface DeleteResult {
   success: boolean;
 }
-
-export interface UserProfile {
-  clerkUserId: string;
-  isPro: boolean;
-  /** Number of images generated today */
-  todayCount: number;
-  /** Daily limit (null means unlimited) */
-  dailyLimit: number;
-  /** Remaining generations today (-1 means unlimited) */
-  remainingToday: number;
-}
