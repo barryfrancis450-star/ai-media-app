@@ -7,7 +7,7 @@ import { eq, sql } from "drizzle-orm";
 
 export const imagesRouter = Router();
 
-imagesRouter.post("/api/openai/images/generate", async (req, res) => {
+imagesRouter.post("/openai/images/generate", async (req, res) => {
   const parsed = GenerateImageBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid request body", details: parsed.error.issues });
@@ -39,7 +39,7 @@ imagesRouter.post("/api/openai/images/generate", async (req, res) => {
   });
 });
 
-imagesRouter.get("/api/openai/images", async (_req, res) => {
+imagesRouter.get("/openai/images", async (_req, res) => {
   const images = await db
     .select({
       id: generatedImagesTable.id,
@@ -53,7 +53,7 @@ imagesRouter.get("/api/openai/images", async (_req, res) => {
   res.json(images.reverse());
 });
 
-imagesRouter.delete("/api/openai/images/:id", async (req, res) => {
+imagesRouter.delete("/openai/images/:id", async (req, res) => {
   const parsed = DeleteGeneratedImageParams.safeParse({ id: req.params.id });
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid id" });
@@ -64,7 +64,7 @@ imagesRouter.delete("/api/openai/images/:id", async (req, res) => {
   res.json({ success: true });
 });
 
-imagesRouter.get("/api/openai/images/stats", async (_req, res) => {
+imagesRouter.get("/openai/images/stats", async (_req, res) => {
   const totalResult = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(generatedImagesTable);
