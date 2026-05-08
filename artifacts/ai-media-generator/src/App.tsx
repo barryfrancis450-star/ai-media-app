@@ -5,6 +5,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { Home } from "@/pages/home";
 import { Gallery } from "@/pages/gallery";
+import { ImagePage } from "@/pages/image";
+import { VideoPage } from "@/pages/video";
+import { VoicePage } from "@/pages/voice";
 import { Layout } from "@/components/layout";
 import { useEffect } from "react";
 
@@ -15,6 +18,9 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/image" component={ImagePage} />
+        <Route path="/video" component={VideoPage} />
+        <Route path="/voice" component={VoicePage} />
         <Route path="/gallery" component={Gallery} />
         <Route component={NotFound} />
       </Switch>
@@ -23,7 +29,6 @@ function Router() {
 }
 
 function App() {
-  // Force dark mode for professional tool vibe
   useEffect(() => {
     document.documentElement.classList.add("dark");
   }, []);
